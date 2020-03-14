@@ -116,7 +116,7 @@ cloud testing services from [BrowserStack](https://browserstack.com),
 
 <!-- start-github-only -->
 
-## More information
+## Documentation
 
 - [Getting started](docs/getting_started.md) - Setting up Intern to test a
   project

@@ -267,6 +267,168 @@ simpler than for a bare WebDriver.
 }
 ```
 
+### Environment
+
+Since unit tests involve running application code directly, they will typically
+run in the same environment as the application. If the application runs in a
+browser, the tests will likely also need to run in the browser. Similarly if the
+application runs in Node, so will the tests.
+
+This is not a hard-and-fast rule, though. In many cases the code being tested
+may run in both environments, or mocks and/or shims may be employed to allow it
+to run in a non-native environment. For example, mock DOMs are often employed to
+allow browser code to be tested in Node.
+
+## Benchmark tests
+
+Benchmark tests are a type of unit test that measures the performance of code
+rather than checking it for proper behavior. A benchmark test assumes that the
+code it’s running will work without error; the test is whether it runs as fast
+as expected.
+
+Benchmarks work by running the test function many times in a loop, with Intern
+(through [Benchmark.js]) recording how long each test function takes to run on
+average. This information can be saved (“baselined”) and used during later test
+runs to see if performance has deviated from acceptable values.
+
+Benchmark tests can only be added with the [benchmark interface](#benchmark).
+Also note that benchmark suites will only be run when the [benchmark] config
+property is `true`. When `benchmark` is not set or is false, calls to register
+benchmark suites will be ignored.
+
+The benchmark test lifecycle is very similar to the standard test lifecycle:
+
+- For each registered root suite...
+  - The suite’s `before` method is called, if it exists
+  - For each test within the suite...
+    - The suite’s `beforeEach` method is called, if it exists
+    - The benchmark is started. The test function will be called many times in a
+      “test loop”. For each execution of the test loop...
+      - The beforeEachLoop method of the suite is called, if it exists
+      - The test function is called
+      - The afterEachLoop method of the suite is called, if it exists
+    - The suite’s `afterEach` method is called, if it exists
+  - The suite’s `after` method is called, if it exists
+
+### Testing native apps
+
+Native mobile application UIs can be tested by Intern using an
+[Appium](http://appium.io/),
+[ios-driver](http://ios-driver.github.io/ios-driver/), or
+[Selendroid](http://selendroid.io/) server. Each server has slightly different
+support for WebDriver, so make sure to read each project’s documentation to pick
+the right one for you.
+
+> ⚠️ Always be sure to set `fixSessionCapabilities: false` in your environment
+> capabilities when testing a native app to bypass feature detection code that
+> only works for standard web browsers.
+
+#### Appium
+
+To test a native app with Appium, one method is to pass the path to a valid IPA
+or APK using the app key in your [environments] configuration:
+
+```json5
+{
+  environments: [
+    {
+      platformName: 'iOS',
+      app: 'testapp.ipa',
+      fixSessionCapabilities: false
+    }
+  ]
+}
+```
+
+You can also use `appPackage` and `appActivity` for Android, or `bundleId` and
+`udid` for iOS, to run an application that is already installed on a test
+device:
+
+```json5
+{
+  environments: [
+    {
+      platformName: 'iOS',
+      bundleId: 'com.example.TestApp',
+      udid: 'da39a3ee5e...',
+      fixSessionCapabilities: false
+    },
+    {
+      platformName: 'Android',
+      appActivity: 'MainActivity',
+      appPackage: 'com.example.TestApp',
+      fixSessionCapabilities: false
+    }
+  ]
+}
+```
+
+The available capabilities for Appium are complex, so review the
+[Appium capabilities documentation](http://appium.io/slate/en/master/?javascript#appium-server-capabilities)
+to understand all possible execution modes.
+
+Once the application has started successfully, you can interact with it using
+any of the supported
+[WebDriver APIs](http://appium.io/slate/en/master/?javascript#finding-and-interacting-with-elements).
+
+#### ios-driver
+
+To test a native app with ios-driver, first run ios-driver, passing one or more
+app bundles for the applications you want to test:
+
+```
+java -jar ios-driver.jar -aut TestApp.app
+```
+
+Then, pass the bundle ID and version using the `CFBundleName` and
+`CFBundleVersion` keys in your [environments] configuration:
+
+```json5
+{
+  environments: [
+    {
+      device: 'iphone',
+      CFBundleName: 'TestApp',
+      CFBundleVersion: '1.0.0',
+      // required for ios-driver to use iOS Simulator
+      simulator: true,
+      fixSessionCapabilities: false
+    }
+  ]
+}
+```
+
+Once the application has started successfully, you can interact with it using
+any of the
+[supported WebDriver APIs](https://ios-driver.github.io/ios-driver/?page=native).
+
+#### Selendroid
+
+To test a native app with Selendroid, first run Selendroid, passing one or more
+APKs for the applications you want to test:
+
+```
+java -jar selendroid.jar -app testapp-1.0.0.apk
+```
+
+Then, pass the Android app ID of the application using the `aut` key in your
+[environments] configuration:
+
+```json5
+{
+  environments: [
+    {
+      automationName: 'selendroid',
+      aut: 'com.example.testapp:1.0.0',
+      fixSessionCapabilities: false
+    }
+  ]
+}
+```
+
+Once the application has started successfully, you can interact with it using
+any of the supported WebDriver APIs.
+
 ### Cloud service
 
 Intern comes with built-in support for four cloud testing services via the
@@ -335,6 +497,14 @@ is provided in the following sections.
     - Set `username` and `accessKey` on your [tunnelOptions] configuration
       option
 5.  Run Intern
+
+## Source maps
+
+Source maps provide a link between transpiled/instrumented/minimized code and
+the original source. Intern uses source maps both for coverage reporting and
+error formatting. For example, when a test generates an error, Intern will look
+up the locations in the stack trace using any available source maps and replace
+them with the corresponding location in the original source.
 
 [capabilities]:
   https://theintern.io/docs.html#Intern/4/api/lib%2Fexecutors%2FNode/capabilities

@@ -54,7 +54,7 @@ environment-specific default method for loading scripts/modules. This means
 
 Plugins are scripts that provide additional funtionality to Intern. They may
 register values or functions that can be directly used in tests, register
-callbacks that will fire at certain poitns in the testing process, or modify the
+callbacks that will fire at certain points in the testing process, or modify the
 environment in some way (e.g., `babel-register`).
 
 ```ts
